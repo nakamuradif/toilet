@@ -1,0 +1,24 @@
+{
+  "name": "polymer_tutorial",
+  "description": "polymer_tutorial",
+  "main": "index.html",
+  "keywords": [
+    "test"
+  ],
+  "authors": [
+    "nakamura"
+  ],
+  "license": "MIT",
+  "homepage": "none",
+  "private": true,
+  "ignore": [
+    "**/.*",
+    "node_modules",
+    "bower_components",
+    "test",
+    "tests"
+  ],
+  "dependencies": {
+    "polymer": "Polymer/polymer#^1.4.0"
+  }
+}
