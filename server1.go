@@ -15,16 +15,18 @@ import (
 var rassecond = 10 //ラズパイが送ってくる間隔（秒）
 
 type Danshi struct {
-	Field    int  `json:"id"`
-	Status   bool `json:"open"`
-	PostDate time.Time
+	Field     int  `json:"id"`
+	Status    bool `json:"open"`
+	PostDate  time.Time
+	Statetime int
 }
 
 type Danshi_bson struct {
-	ID       bson.ObjectId `bson:"_id`
-	Field    int           `bson:"field"`
-	Status   bool          `bson:"status"`
-	PostDate time.Time     `bson:"postdate"`
+	ID        bson.ObjectId `bson:"_id`
+	Field     int           `bson:"field"`
+	Status    bool          `bson:"status"`
+	PostDate  time.Time     `bson:"postdate"`
+	Statetime int           `bson:"statetime"`
 }
 
 type Danshi_status struct {
@@ -117,34 +119,40 @@ func HonokaHandler(w http.ResponseWriter, r *http.Request) {
 			log.Fatal(err)
 		}
 
-		ritsu := &Danshi{danshi.Field, danshi.Status, time.Now()}
-		col := db.C("danshi")
-		err = col.Insert(ritsu)
-		if err != nil {
-			panic(err)
+		nStatus := getStatus(db, danshi.Field)
+		if !danshi.Status || nStatus.Status {
+			ritsu := &Danshi{danshi.Field, danshi.Status, time.Now(), 0}
+			db.C("danshi").Insert(ritsu)
+
+		} else {
+			time.Since(nStatus.PostDate)
+			fmt.Println("time-b")
+			fmt.Println(time.Since(nStatus.PostDate))
+			ritsu := &Danshi{danshi.Field, danshi.Status, time.Now(), int(time.Since(nStatus.PostDate).Seconds())}
+			db.C("danshi").Insert(ritsu)
 		}
 
 		// レスポンスとしてステータスコード201を送信
 		w.WriteHeader(http.StatusCreated)
 	} else if r.Method == "GET" {
 		p := Danshi_status{
-			Status_11: getStatus(db, 11),
-			Status_21: getStatus(db, 21),
-			Status_22: getStatus(db, 22),
-			Status_31: getStatus(db, 31),
-			Status_32: getStatus(db, 32),
-			Status_41: getStatus(db, 41),
-			Status_42: getStatus(db, 42),
-			Status_51: getStatus(db, 51),
-			Status_52: getStatus(db, 52),
-			Status_61: getStatus(db, 61),
-			Status_62: getStatus(db, 62),
-			Status_71: getStatus(db, 71),
-			Status_72: getStatus(db, 72),
-			Status_81: getStatus(db, 81),
-			Status_82: getStatus(db, 82),
-			Status_91: getStatus(db, 91),
-			Status_92: getStatus(db, 92),
+			Status_11: getStatus(db, 11).Status,
+			Status_21: getStatus(db, 21).Status,
+			Status_22: getStatus(db, 22).Status,
+			Status_31: getStatus(db, 31).Status,
+			Status_32: getStatus(db, 32).Status,
+			Status_41: getStatus(db, 41).Status,
+			Status_42: getStatus(db, 42).Status,
+			Status_51: getStatus(db, 51).Status,
+			Status_52: getStatus(db, 52).Status,
+			Status_61: getStatus(db, 61).Status,
+			Status_62: getStatus(db, 62).Status,
+			Status_71: getStatus(db, 71).Status,
+			Status_72: getStatus(db, 72).Status,
+			Status_81: getStatus(db, 81).Status,
+			Status_82: getStatus(db, 82).Status,
+			Status_91: getStatus(db, 91).Status,
+			Status_92: getStatus(db, 92).Status,
 			Summary:   select_map(getAllStatus(db)),
 		}
 
@@ -155,11 +163,11 @@ func HonokaHandler(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func getStatus(db *mgo.Database, field int) bool {
+func getStatus(db *mgo.Database, field int) *Danshi_bson {
 	p := new(Danshi_bson)
 	query := db.C("danshi").Find(bson.M{"field": field}).Sort("-postdate")
 	query.One(&p)
-	return p.Status
+	return p
 }
 
 func getAllStatus(db *mgo.Database) []Danshi_bson_summary {
@@ -167,7 +175,7 @@ func getAllStatus(db *mgo.Database) []Danshi_bson_summary {
 	query := db.C("danshi").Pipe([]bson.M{
 		bson.M{
 			"$group": bson.M{
-				"count": bson.M{"$sum": 1},
+				"count": bson.M{"$sum": "$statetime"},
 				"_id": bson.M{
 					"year":   bson.M{"$year": "$postdate"},
 					"month":  bson.M{"$month": "$postdate"},
@@ -214,117 +222,116 @@ func select_map(s []Danshi_bson_summary) []Summary_1 {
 	var datetmp string
 	var datetmps []string
 	for _, x := range s {
-		if x.Status {
-			datetmp = strconv.Itoa(x.Year) + strconv.Itoa(x.Month) + strconv.Itoa(x.Day)
-			var zflg bool = true
-			for _, d := range datetmps {
-				if d == datetmp {
-					zflg = false
-				}
+
+		datetmp = strconv.Itoa(x.Year) + strconv.Itoa(x.Month) + strconv.Itoa(x.Day)
+		var zflg bool = true
+		for _, d := range datetmps {
+			if d == datetmp {
+				zflg = false
 			}
-			if zflg {
+		}
+		if zflg {
 
-				datetmps = append(datetmps, datetmp)
-				var Count_11_tmp int = 0
-				var Count_21_tmp int = 0
-				var Count_22_tmp int = 0
-				var Count_31_tmp int = 0
-				var Count_32_tmp int = 0
-				var Count_41_tmp int = 0
-				var Count_42_tmp int = 0
-				var Count_51_tmp int = 0
-				var Count_52_tmp int = 0
-				var Count_61_tmp int = 0
-				var Count_62_tmp int = 0
-				var Count_71_tmp int = 0
-				var Count_72_tmp int = 0
-				var Count_81_tmp int = 0
-				var Count_82_tmp int = 0
-				var Count_91_tmp int = 0
-				var Count_92_tmp int = 0
+			datetmps = append(datetmps, datetmp)
+			var Count_11_tmp int = 0
+			var Count_21_tmp int = 0
+			var Count_22_tmp int = 0
+			var Count_31_tmp int = 0
+			var Count_32_tmp int = 0
+			var Count_41_tmp int = 0
+			var Count_42_tmp int = 0
+			var Count_51_tmp int = 0
+			var Count_52_tmp int = 0
+			var Count_61_tmp int = 0
+			var Count_62_tmp int = 0
+			var Count_71_tmp int = 0
+			var Count_72_tmp int = 0
+			var Count_81_tmp int = 0
+			var Count_82_tmp int = 0
+			var Count_91_tmp int = 0
+			var Count_92_tmp int = 0
 
-				for _, x1 := range s {
-					if datetmp == strconv.Itoa(x1.Year)+strconv.Itoa(x1.Month)+strconv.Itoa(x1.Day) && x1.Status {
-						fmt.Println(x1.Field)
-						fmt.Println(x1.Count)
-						if 11 == x1.Field {
-							Count_11_tmp = x1.Count * rassecond
-						} else if 21 == x1.Field {
-							Count_21_tmp = x1.Count * rassecond
-						} else if 22 == x1.Field {
-							Count_22_tmp = x1.Count * rassecond
-						} else if 31 == x1.Field {
-							Count_31_tmp = x1.Count * rassecond
-						} else if 32 == x1.Field {
-							Count_32_tmp = x1.Count * rassecond
-						} else if 41 == x1.Field {
-							Count_41_tmp = x1.Count * rassecond
-						} else if 42 == x1.Field {
-							Count_42_tmp = x1.Count * rassecond
-						} else if 51 == x1.Field {
-							Count_51_tmp = x1.Count * rassecond
-						} else if 52 == x1.Field {
-							Count_52_tmp = x1.Count * rassecond
-						} else if 61 == x1.Field {
-							Count_61_tmp = x1.Count * rassecond
-						} else if 62 == x1.Field {
-							Count_62_tmp = x1.Count * rassecond
-						} else if 71 == x1.Field {
-							Count_71_tmp = x1.Count * rassecond
-						} else if 72 == x1.Field {
-							Count_72_tmp = x1.Count * rassecond
-						} else if 81 == x1.Field {
-							Count_81_tmp = x1.Count * rassecond
-						} else if 82 == x1.Field {
-							Count_82_tmp = x1.Count * rassecond
-						} else if 91 == x1.Field {
-							Count_91_tmp = x1.Count * rassecond
-						} else if 92 == x1.Field {
-							Count_92_tmp = x1.Count * rassecond
-						}
+			for _, x1 := range s {
+				if datetmp == strconv.Itoa(x1.Year)+strconv.Itoa(x1.Month)+strconv.Itoa(x1.Day) {
+					fmt.Println(x1.Field)
+					fmt.Println(x1.Count)
+					if 11 == x1.Field {
+						Count_11_tmp = x1.Count * rassecond
+					} else if 21 == x1.Field {
+						Count_21_tmp = x1.Count * rassecond
+					} else if 22 == x1.Field {
+						Count_22_tmp = x1.Count * rassecond
+					} else if 31 == x1.Field {
+						Count_31_tmp = x1.Count * rassecond
+					} else if 32 == x1.Field {
+						Count_32_tmp = x1.Count * rassecond
+					} else if 41 == x1.Field {
+						Count_41_tmp = x1.Count * rassecond
+					} else if 42 == x1.Field {
+						Count_42_tmp = x1.Count * rassecond
+					} else if 51 == x1.Field {
+						Count_51_tmp = x1.Count * rassecond
+					} else if 52 == x1.Field {
+						Count_52_tmp = x1.Count * rassecond
+					} else if 61 == x1.Field {
+						Count_61_tmp = x1.Count * rassecond
+					} else if 62 == x1.Field {
+						Count_62_tmp = x1.Count * rassecond
+					} else if 71 == x1.Field {
+						Count_71_tmp = x1.Count * rassecond
+					} else if 72 == x1.Field {
+						Count_72_tmp = x1.Count * rassecond
+					} else if 81 == x1.Field {
+						Count_81_tmp = x1.Count * rassecond
+					} else if 82 == x1.Field {
+						Count_82_tmp = x1.Count * rassecond
+					} else if 91 == x1.Field {
+						Count_91_tmp = x1.Count * rassecond
+					} else if 92 == x1.Field {
+						Count_92_tmp = x1.Count * rassecond
 					}
 				}
-				ans = append(
-					ans,
-					Summary_1{
-						Date:     datetmp,
-						Area_11:  "11",
-						Area_21:  "21",
-						Area_22:  "22",
-						Area_31:  "31",
-						Area_32:  "32",
-						Area_41:  "41",
-						Area_42:  "42",
-						Area_51:  "51",
-						Area_52:  "52",
-						Area_61:  "61",
-						Area_62:  "62",
-						Area_71:  "71",
-						Area_72:  "72",
-						Area_81:  "81",
-						Area_82:  "82",
-						Area_91:  "91",
-						Area_92:  "92",
-						Count_11: Count_11_tmp,
-						Count_21: Count_21_tmp,
-						Count_22: Count_22_tmp,
-						Count_31: Count_31_tmp,
-						Count_32: Count_32_tmp,
-						Count_41: Count_41_tmp,
-						Count_42: Count_42_tmp,
-						Count_51: Count_51_tmp,
-						Count_52: Count_52_tmp,
-						Count_61: Count_61_tmp,
-						Count_62: Count_62_tmp,
-						Count_71: Count_71_tmp,
-						Count_72: Count_72_tmp,
-						Count_81: Count_81_tmp,
-						Count_82: Count_82_tmp,
-						Count_91: Count_91_tmp,
-						Count_92: Count_92_tmp,
-					},
-				)
 			}
+			ans = append(
+				ans,
+				Summary_1{
+					Date:     datetmp,
+					Area_11:  "11",
+					Area_21:  "21",
+					Area_22:  "22",
+					Area_31:  "31",
+					Area_32:  "32",
+					Area_41:  "41",
+					Area_42:  "42",
+					Area_51:  "51",
+					Area_52:  "52",
+					Area_61:  "61",
+					Area_62:  "62",
+					Area_71:  "71",
+					Area_72:  "72",
+					Area_81:  "81",
+					Area_82:  "82",
+					Area_91:  "91",
+					Area_92:  "92",
+					Count_11: Count_11_tmp,
+					Count_21: Count_21_tmp,
+					Count_22: Count_22_tmp,
+					Count_31: Count_31_tmp,
+					Count_32: Count_32_tmp,
+					Count_41: Count_41_tmp,
+					Count_42: Count_42_tmp,
+					Count_51: Count_51_tmp,
+					Count_52: Count_52_tmp,
+					Count_61: Count_61_tmp,
+					Count_62: Count_62_tmp,
+					Count_71: Count_71_tmp,
+					Count_72: Count_72_tmp,
+					Count_81: Count_81_tmp,
+					Count_82: Count_82_tmp,
+					Count_91: Count_91_tmp,
+					Count_92: Count_92_tmp,
+				},
+			)
 		}
 	}
 	return ans
