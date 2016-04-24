@@ -12,7 +12,7 @@ import (
 	"time"
 )
 
-var rassecond = 10 //ラズパイが送ってくる間隔（秒）
+var rassecond = 1
 
 type Danshi struct {
 	Field     int  `json:"id"`
