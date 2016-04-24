@@ -341,6 +341,6 @@ func main() {
 	http.Handle("/js/", http.StripPrefix("/js/", jsHandler))
 	http.Handle("/images/", http.StripPrefix("/images/", imageHandler))
 
-	http.HandleFunc("/honoka", HonokaHandler)
+	http.HandleFunc("/toilet", HonokaHandler)
 	http.ListenAndServe(":3000", nil)
 }
