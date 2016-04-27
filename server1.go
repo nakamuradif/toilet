@@ -120,15 +120,15 @@ func HonokaHandler(w http.ResponseWriter, r *http.Request) {
 		}
 
 		nStatus := getStatus(db, danshi.Field)
-		if !danshi.Status || nStatus.Status {
-			ritsu := &Danshi{danshi.Field, danshi.Status, time.Now(), 0}
+		if !danshi.Status || !nStatus.Status {
+			ritsu := &Danshi{danshi.Field, !danshi.Status, time.Now(), 0}
 			db.C("danshi").Insert(ritsu)
 
 		} else {
 			time.Since(nStatus.PostDate)
 			fmt.Println("time-b")
 			fmt.Println(time.Since(nStatus.PostDate))
-			ritsu := &Danshi{danshi.Field, danshi.Status, time.Now(), int(time.Since(nStatus.PostDate).Seconds())}
+			ritsu := &Danshi{danshi.Field, !danshi.Status, time.Now(), int(time.Since(nStatus.PostDate).Seconds())}
 			db.C("danshi").Insert(ritsu)
 		}
 
@@ -180,8 +180,7 @@ func getAllStatus(db *mgo.Database) []Danshi_bson_summary {
 					"year":   bson.M{"$year": "$postdate"},
 					"month":  bson.M{"$month": "$postdate"},
 					"day":    bson.M{"$dayOfMonth": "$postdate"},
-					"field":  "$field",
-					"status": "$status"},
+					"field":  "$field"},
 			},
 		},
 		bson.M{
@@ -190,7 +189,6 @@ func getAllStatus(db *mgo.Database) []Danshi_bson_summary {
 				"month":  "$_id.month",
 				"day":    "$_id.day",
 				"field":  "$_id.field",
-				"status": "$_id.status",
 				"count":  1,
 			},
 		},
@@ -200,7 +198,6 @@ func getAllStatus(db *mgo.Database) []Danshi_bson_summary {
 				"month":  1,
 				"day":    1,
 				"field":  1,
-				"status": 1,
 			},
 		},
 	})
